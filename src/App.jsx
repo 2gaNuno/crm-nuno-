@@ -164,6 +164,15 @@ export default function App() {
 
   const deleteGold = (id) => { if(confirm('Remover comissão?')) setComissoesGold(prev => prev.filter(c => c.id !== id)); };
 
+  const resetAllData = () => {
+    if(confirm('ATENÇÃO: Isto vai apagar TODOS os dados (clientes, negócios, interações e comissões). Tens a certeza?')) {
+      setClients([]);
+      setDeals([]);
+      setInteractions([]);
+      setComissoesGold([]);
+    }
+  };
+
   const handleDrop = (status) => {
     if (dragDeal) {
       setDeals(prev => prev.map(d => d.id === dragDeal ? {...d, status} : d));
@@ -185,6 +194,7 @@ export default function App() {
     {key:'pipeline',icon:'📊',label:'Pipeline'},
     {key:'interacoes',icon:'💬',label:'Interações'},
     {key:'comissoes-gold',icon:'💰',label:'Comissões Gold'},
+    {key:'definicoes',icon:'⚙️',label:'Definições'},
   ];
 
   return (
@@ -331,6 +341,38 @@ export default function App() {
               <thead><tr>{['Data','Cliente','Tipo','Assunto','Detalhes','Follow-up'].map(h => <th key={h} style={{padding:'11px 14px',textAlign:'left',fontSize:11,textTransform:'uppercase',color:'#718096',fontWeight:600,borderBottom:'1px solid #E2E8F0',background:'#F5F7FA'}}>{h}</th>)}</tr></thead>
               <tbody>{interactions.map((it,i) => <tr key={i}>{[it.data,it.cliente,it.tipo,it.assunto,it.detalhes,it.followup].map((v,j) => <td key={j} style={{padding:'13px 14px',fontSize:14,borderBottom:'1px solid #E2E8F0'}}>{v}</td>)}</tr>)}</tbody>
             </table>
+          </div>
+        </>}
+
+        {/* DEFINIÇÕES */}
+        {view === 'definicoes' && <>
+          <h2 style={{fontFamily:'"Playfair Display",serif',fontSize:28,color:'#1B2A4A',marginBottom:20}}>Definições</h2>
+
+          <div style={{background:'#fff',borderRadius:12,padding:24,boxShadow:'0 1px 3px rgba(0,0,0,.06)',marginBottom:20}}>
+            <h3 style={{fontSize:16,fontWeight:600,color:'#1B2A4A',marginBottom:8}}>Dados Guardados</h3>
+            <p style={{fontSize:14,color:'#718096',marginBottom:16}}>Os teus dados são guardados automaticamente no browser.</p>
+            <div style={{display:'flex',gap:16,flexWrap:'wrap'}}>
+              <div style={{padding:'12px 20px',background:'#F7FAFC',borderRadius:8,fontSize:14}}>
+                <span style={{color:'#718096'}}>Clientes:</span> <strong>{clients.length}</strong>
+              </div>
+              <div style={{padding:'12px 20px',background:'#F7FAFC',borderRadius:8,fontSize:14}}>
+                <span style={{color:'#718096'}}>Negócios:</span> <strong>{deals.length}</strong>
+              </div>
+              <div style={{padding:'12px 20px',background:'#F7FAFC',borderRadius:8,fontSize:14}}>
+                <span style={{color:'#718096'}}>Interações:</span> <strong>{interactions.length}</strong>
+              </div>
+              <div style={{padding:'12px 20px',background:'#F7FAFC',borderRadius:8,fontSize:14}}>
+                <span style={{color:'#718096'}}>Comissões Gold:</span> <strong>{comissoesGold.length}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div style={{background:'#FFF5F5',borderRadius:12,padding:24,boxShadow:'0 1px 3px rgba(0,0,0,.06)',border:'1px solid #FED7D7'}}>
+            <h3 style={{fontSize:16,fontWeight:600,color:'#C53030',marginBottom:8}}>Zona de Perigo</h3>
+            <p style={{fontSize:14,color:'#718096',marginBottom:16}}>Apagar todos os dados e começar do zero. Esta ação não pode ser desfeita.</p>
+            <button onClick={resetAllData} style={{padding:'10px 20px',border:'none',borderRadius:8,background:'#C53030',color:'#fff',fontSize:14,fontWeight:600,cursor:'pointer'}}>
+              🗑 Apagar Todos os Dados
+            </button>
           </div>
         </>}
 
