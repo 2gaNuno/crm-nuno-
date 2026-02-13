@@ -44,6 +44,7 @@ const saveData = (key, data) => {
 
 const STATUSES = ['Lead','Contactado','Visita Agendada','Proposta','Negociação','Fechado','Perdido'];
 const TIPOS = ['Comprador','Vendedor','Investidor','Arrendatário','Senhorio'];
+const STATUS_CLIENTE = ['Ativo','Concluído','Inativo'];
 const TIPOLOGIAS = ['T0','T1','T2','T3','T4','T5+','Moradia','Terreno','Loja','Escritório'];
 const FONTES = ['Referência','Website','Instagram','OLX','Idealista','Walk-in','Outro'];
 const CONTACTOS = ['Chamada','WhatsApp','Email','Visita','Reunião','SMS'];
@@ -78,6 +79,7 @@ export default function App() {
   useEffect(() => { saveData('crm_comissoes_gold', comissoesGold); }, [comissoesGold]);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [modal, setModal] = useState(null);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({});
@@ -97,13 +99,14 @@ export default function App() {
   const filtered = useMemo(() => {
     return clients.filter(c => {
       if (filter !== 'all' && c.tipo !== filter) return false;
+      if (statusFilter !== 'all' && (c.status || 'Ativo') !== statusFilter) return false;
       if (search) {
         const s = search.toLowerCase();
         return c.nome.toLowerCase().includes(s) || c.email.toLowerCase().includes(s) || c.zona.toLowerCase().includes(s);
       }
       return true;
     });
-  }, [clients, filter, search]);
+  }, [clients, filter, statusFilter, search]);
 
   const openClientModal = (id = null) => {
     if (id) {
@@ -111,7 +114,7 @@ export default function App() {
       setForm({...c});
       setEditId(id);
     } else {
-      setForm({tipo:'Comprador',tipologia:'T2',fonte:'Website'});
+      setForm({tipo:'Comprador',tipologia:'T2',fonte:'Website',status:'Ativo'});
       setEditId(null);
     }
     setModal('client');
@@ -270,7 +273,7 @@ export default function App() {
           <div style={{background:'#fff',borderRadius:12,boxShadow:'0 1px 3px rgba(0,0,0,.06)',overflow:'hidden'}}>
             <div style={{padding:'14px 18px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:'1px solid #E2E8F0',flexWrap:'wrap',gap:10}}>
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍 Pesquisar clientes..." style={{padding:'8px 14px',border:'1.5px solid #E2E8F0',borderRadius:8,width:280,fontSize:14,outline:'none'}}/>
-              <div style={{display:'flex',gap:6}}>
+              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
                 {['all','Comprador','Vendedor','Investidor','Arrendatário'].map(f => (
                   <button key={f} onClick={() => setFilter(f)}
                     style={{padding:'5px 14px',borderRadius:20,fontSize:12,fontWeight:600,cursor:'pointer',border:'1.5px solid',
@@ -280,18 +283,32 @@ export default function App() {
                     {f==='all' ? 'Todos' : f+'s'}
                   </button>
                 ))}
+                <span style={{margin:'0 8px',color:'#CBD5E0'}}>|</span>
+                {['all','Ativo','Concluído','Inativo'].map(s => (
+                  <button key={s} onClick={() => setStatusFilter(s)}
+                    style={{padding:'5px 14px',borderRadius:20,fontSize:12,fontWeight:600,cursor:'pointer',border:'1.5px solid',
+                      background: statusFilter===s ? (s==='Concluído' ? '#48BB78' : s==='Inativo' ? '#718096' : '#4299E1') : 'transparent',
+                      color: statusFilter===s ? '#fff' : '#4A5568',
+                      borderColor: statusFilter===s ? (s==='Concluído' ? '#48BB78' : s==='Inativo' ? '#718096' : '#4299E1') : '#E2E8F0'}}>
+                    {s==='all' ? 'Todos Estados' : s}
+                  </button>
+                ))}
               </div>
             </div>
             <table style={{width:'100%',borderCollapse:'collapse'}}>
-              <thead><tr>{['Nome','Telefone','Email','Tipo','Zona','Budget','Ações'].map(h => <th key={h} style={{padding:'11px 14px',textAlign:'left',fontSize:11,textTransform:'uppercase',color:'#718096',fontWeight:600,borderBottom:'1px solid #E2E8F0',background:'#F5F7FA'}}>{h}</th>)}</tr></thead>
+              <thead><tr>{['Nome','Telefone','Tipo','Zona','Estado','Ações'].map(h => <th key={h} style={{padding:'11px 14px',textAlign:'left',fontSize:11,textTransform:'uppercase',color:'#718096',fontWeight:600,borderBottom:'1px solid #E2E8F0',background:'#F5F7FA'}}>{h}</th>)}</tr></thead>
               <tbody>{filtered.map(c => (
-                <tr key={c.id} style={{transition:'.1s'}}>
+                <tr key={c.id} style={{transition:'.1s',opacity: c.status === 'Concluído' ? 0.6 : 1}}>
                   <td style={{padding:'13px 14px',fontSize:14,borderBottom:'1px solid #E2E8F0',fontWeight:600}}>{c.nome}</td>
                   <td style={{padding:'13px 14px',fontSize:14,borderBottom:'1px solid #E2E8F0'}}>{c.tel}</td>
-                  <td style={{padding:'13px 14px',fontSize:14,borderBottom:'1px solid #E2E8F0'}}>{c.email}</td>
                   <td style={{padding:'13px 14px',borderBottom:'1px solid #E2E8F0'}}><Badge tipo={c.tipo}/></td>
                   <td style={{padding:'13px 14px',fontSize:14,borderBottom:'1px solid #E2E8F0'}}>{c.zona}</td>
-                  <td style={{padding:'13px 14px',fontSize:14,borderBottom:'1px solid #E2E8F0'}}>{fmt(c.bmin)}€ - {fmt(c.bmax)}€</td>
+                  <td style={{padding:'13px 14px',borderBottom:'1px solid #E2E8F0'}}>
+                    <span style={{display:'inline-block',padding:'4px 12px',borderRadius:20,fontSize:12,fontWeight:600,
+                      background: c.status==='Ativo' ? '#BEE3F8' : c.status==='Concluído' ? '#C6F6D5' : '#E2E8F0',
+                      color: c.status==='Ativo' ? '#2B6CB0' : c.status==='Concluído' ? '#276749' : '#718096'
+                    }}>{c.status || 'Ativo'}</span>
+                  </td>
                   <td style={{padding:'13px 14px',borderBottom:'1px solid #E2E8F0'}}>
                     <button onClick={() => openClientModal(c.id)} style={{padding:'5px 10px',border:'1.5px solid #E2E8F0',borderRadius:6,background:'transparent',cursor:'pointer',marginRight:6,fontSize:13}}>✏️</button>
                     <button onClick={() => deleteClient(c.id)} style={{padding:'5px 10px',border:'none',borderRadius:6,background:'#FED7D7',color:'#C53030',cursor:'pointer',fontSize:13}}>🗑</button>
@@ -452,6 +469,7 @@ export default function App() {
                   {key:'bmin',label:'Budget Mín (€)',full:false,type:'number'},
                   {key:'bmax',label:'Budget Máx (€)',full:false,type:'number'},
                   {key:'fonte',label:'Fonte',full:false,type:'select',opts:FONTES},
+                  {key:'status',label:'Estado',full:false,type:'select',opts:STATUS_CLIENTE},
                   {key:'notas',label:'Notas',full:true,type:'textarea'},
                 ].map(f => (
                   <div key={f.key} style={{display:'flex',flexDirection:'column',gap:4,gridColumn:f.full?'1/-1':undefined}}>
