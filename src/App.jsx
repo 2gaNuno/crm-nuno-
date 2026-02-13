@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 
 const INITIAL_CLIENTS = [
   {id:'C001',nome:'João Silva',tel:'912345678',email:'joao@email.com',tipo:'Comprador',zona:'Lisboa Centro',tipologia:'T2',bmin:150000,bmax:250000,fonte:'Website',data:'2025-01-15',notas:'Procura perto do metro'},
@@ -30,6 +30,18 @@ const INITIAL_COMISSOES_GOLD = [
 
 const STATUS_GOLD = ['Pendente','Aprovado','Pago','Recusado'];
 
+// Funções para localStorage
+const loadData = (key, defaultValue) => {
+  try {
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : defaultValue;
+  } catch { return defaultValue; }
+};
+
+const saveData = (key, data) => {
+  try { localStorage.setItem(key, JSON.stringify(data)); } catch {}
+};
+
 const STATUSES = ['Lead','Contactado','Visita Agendada','Proposta','Negociação'];
 const TIPOS = ['Comprador','Vendedor','Investidor','Arrendatário','Senhorio'];
 const TIPOLOGIAS = ['T0','T1','T2','T3','T4','T5+','Moradia','Terreno','Loja','Escritório'];
@@ -54,10 +66,16 @@ const StatusDot = ({status}) => {
 
 export default function App() {
   const [view, setView] = useState('dashboard');
-  const [clients, setClients] = useState(INITIAL_CLIENTS);
-  const [deals, setDeals] = useState(INITIAL_DEALS);
-  const [interactions, setInteractions] = useState(INITIAL_INTERACTIONS);
-  const [comissoesGold, setComissoesGold] = useState(INITIAL_COMISSOES_GOLD);
+  const [clients, setClients] = useState(() => loadData('crm_clients', INITIAL_CLIENTS));
+  const [deals, setDeals] = useState(() => loadData('crm_deals', INITIAL_DEALS));
+  const [interactions, setInteractions] = useState(() => loadData('crm_interactions', INITIAL_INTERACTIONS));
+  const [comissoesGold, setComissoesGold] = useState(() => loadData('crm_comissoes_gold', INITIAL_COMISSOES_GOLD));
+
+  // Guardar automaticamente quando os dados mudam
+  useEffect(() => { saveData('crm_clients', clients); }, [clients]);
+  useEffect(() => { saveData('crm_deals', deals); }, [deals]);
+  useEffect(() => { saveData('crm_interactions', interactions); }, [interactions]);
+  useEffect(() => { saveData('crm_comissoes_gold', comissoesGold); }, [comissoesGold]);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [modal, setModal] = useState(null);
