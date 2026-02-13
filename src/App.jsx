@@ -321,13 +321,19 @@ export default function App() {
               </div>
             </div>
             <table style={{width:'100%',borderCollapse:'collapse'}}>
-              <thead><tr>{['Nome','Telefone','Tipo','Zona','Estado','Ações'].map(h => <th key={h} style={{padding:'11px 14px',textAlign:'left',fontSize:11,textTransform:'uppercase',color:'#718096',fontWeight:600,borderBottom:'1px solid #E2E8F0',background:'#F5F7FA'}}>{h}</th>)}</tr></thead>
+              <thead><tr>{['Nome','Telefone','Tipo','Zona','Valor/Budget','Estado','Ações'].map(h => <th key={h} style={{padding:'11px 14px',textAlign:'left',fontSize:11,textTransform:'uppercase',color:'#718096',fontWeight:600,borderBottom:'1px solid #E2E8F0',background:'#F5F7FA'}}>{h}</th>)}</tr></thead>
               <tbody>{filtered.map(c => (
                 <tr key={c.id} style={{transition:'.1s',opacity: c.status === 'Concluído' ? 0.6 : 1}}>
                   <td style={{padding:'13px 14px',fontSize:14,borderBottom:'1px solid #E2E8F0',fontWeight:600}}>{c.nome}</td>
                   <td style={{padding:'13px 14px',fontSize:14,borderBottom:'1px solid #E2E8F0'}}>{c.tel}</td>
                   <td style={{padding:'13px 14px',borderBottom:'1px solid #E2E8F0'}}><Badge tipo={c.tipo}/></td>
                   <td style={{padding:'13px 14px',fontSize:14,borderBottom:'1px solid #E2E8F0'}}>{c.zona}</td>
+                  <td style={{padding:'13px 14px',fontSize:14,borderBottom:'1px solid #E2E8F0'}}>
+                    {(c.tipo === 'Vendedor' || c.tipo === 'Senhorio')
+                      ? <span style={{color:'#48BB78',fontWeight:600}}>{fmt(c.valorImovel || 0)} €</span>
+                      : <span>{fmt(c.bmin || 0)}€ - {fmt(c.bmax || 0)}€</span>
+                    }
+                  </td>
                   <td style={{padding:'13px 14px',borderBottom:'1px solid #E2E8F0'}}>
                     <span style={{display:'inline-block',padding:'4px 12px',borderRadius:20,fontSize:12,fontWeight:600,
                       background: c.status==='Ativo' ? '#BEE3F8' : c.status==='Concluído' ? '#C6F6D5' : '#E2E8F0',
@@ -503,12 +509,13 @@ export default function App() {
                   {key:'tipo',label:'Tipo',full:false,type:'select',opts:TIPOS},
                   {key:'zona',label:'Zona Preferida',full:false,type:'text'},
                   {key:'tipologia',label:'Tipologia',full:false,type:'select',opts:TIPOLOGIAS},
-                  {key:'bmin',label:'Budget Mín (€)',full:false,type:'number'},
-                  {key:'bmax',label:'Budget Máx (€)',full:false,type:'number'},
+                  {key:'valorImovel',label:'Valor do Imóvel (€)',full:false,type:'number',show:['Vendedor','Senhorio']},
+                  {key:'bmin',label:'Budget Mín (€)',full:false,type:'number',show:['Comprador','Investidor','Arrendatário']},
+                  {key:'bmax',label:'Budget Máx (€)',full:false,type:'number',show:['Comprador','Investidor','Arrendatário']},
                   {key:'fonte',label:'Fonte',full:false,type:'select',opts:FONTES},
                   {key:'status',label:'Estado',full:false,type:'select',opts:STATUS_CLIENTE},
                   {key:'notas',label:'Notas',full:true,type:'textarea'},
-                ].map(f => (
+                ].filter(f => !f.show || f.show.includes(form.tipo || 'Comprador')).map(f => (
                   <div key={f.key} style={{display:'flex',flexDirection:'column',gap:4,gridColumn:f.full?'1/-1':undefined}}>
                     <label style={{fontSize:11,fontWeight:600,color:'#718096',textTransform:'uppercase',letterSpacing:'.3px'}}>{f.label}</label>
                     {f.type==='select' ? (
