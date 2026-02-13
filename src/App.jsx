@@ -42,7 +42,7 @@ const saveData = (key, data) => {
   try { localStorage.setItem(key, JSON.stringify(data)); } catch {}
 };
 
-const STATUSES = ['Lead','Contactado','Visita Agendada','Proposta','Negociação'];
+const STATUSES = ['Lead','Contactado','Visita Agendada','Proposta','Negociação','Fechado','Perdido'];
 const TIPOS = ['Comprador','Vendedor','Investidor','Arrendatário','Senhorio'];
 const TIPOLOGIAS = ['T0','T1','T2','T3','T4','T5+','Moradia','Terreno','Loja','Escritório'];
 const FONTES = ['Referência','Website','Instagram','OLX','Idealista','Walk-in','Outro'];
@@ -85,11 +85,13 @@ export default function App() {
 
   const stats = useMemo(() => {
     const active = deals.filter(d => d.status !== 'Fechado' && d.status !== 'Perdido');
-    const totalVal = deals.reduce((s,d) => s + d.valor, 0);
-    const totalCom = deals.reduce((s,d) => s + (d.valor * d.comissao / 100), 0);
+    const fechados = deals.filter(d => d.status === 'Fechado');
+    const totalVal = active.reduce((s,d) => s + d.valor, 0);
+    const totalCom = active.reduce((s,d) => s + (d.valor * d.comissao / 100), 0);
+    const comissoesGanhas = fechados.reduce((s,d) => s + (d.valor * d.comissao / 100), 0);
     const goldPago = comissoesGold.filter(c => c.status === 'Pago').reduce((s,c) => s + c.comissao, 0);
     const goldPendente = comissoesGold.filter(c => c.status !== 'Pago' && c.status !== 'Recusado').reduce((s,c) => s + c.comissao, 0);
-    return { total: clients.length, ativos: active.length, valor: totalVal, comissoes: Math.round(totalCom), goldPago, goldPendente, goldTotal: comissoesGold.length };
+    return { total: clients.length, ativos: active.length, fechados: fechados.length, valor: totalVal, comissoes: Math.round(totalCom), comissoesGanhas: Math.round(comissoesGanhas), goldPago, goldPendente, goldTotal: comissoesGold.length };
   }, [clients, deals, comissoesGold]);
 
   const filtered = useMemo(() => {
@@ -237,8 +239,8 @@ export default function App() {
             {[
               {label:'Total Clientes',val:stats.total,sub:'na base de dados',color:'#D4A853'},
               {label:'Negócios Ativos',val:stats.ativos,sub:'em pipeline',color:'#4299E1'},
-              {label:'Valor Pipeline',val:fmt(stats.valor)+' €',sub:'potencial total',color:'#48BB78'},
-              {label:'Comissões Est.',val:fmt(stats.comissoes)+' €',sub:'estimativa',color:'#9F7AEA'},
+              {label:'Comissões Ganhas',val:fmt(stats.comissoesGanhas)+' €',sub:stats.fechados+' negócios fechados',color:'#48BB78'},
+              {label:'Comissões Est.',val:fmt(stats.comissoes)+' €',sub:'em negociação',color:'#9F7AEA'},
             ].map((s,i) => (
               <div key={i} style={{background:'#fff',borderRadius:12,padding:20,boxShadow:'0 1px 3px rgba(0,0,0,.06)',borderTop:`3px solid ${s.color}`}}>
                 <div style={{fontSize:11,color:'#718096',textTransform:'uppercase',letterSpacing:'.5px',fontWeight:600}}>{s.label}</div>
