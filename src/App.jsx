@@ -9,11 +9,11 @@ const INITIAL_CLIENTS = [
 ];
 
 const INITIAL_DEALS = [
-  {id:'N001',cliente:'João Silva',imovel:'T2 Av. Roma, Lisboa',valor:220000,comissao:3,status:'Visita Agendada'},
-  {id:'N002',cliente:'Maria Santos',imovel:'T3 Vista Rio, Almada',valor:300000,comissao:3,status:'Proposta'},
-  {id:'N003',cliente:'Pedro Costa',imovel:'T1 Centro, Setúbal',valor:140000,comissao:4,status:'Lead'},
-  {id:'N004',cliente:'Ana Ferreira',imovel:'Moradia, Seixal',valor:420000,comissao:3.5,status:'Negociação'},
-  {id:'N005',cliente:'Carlos Mendes',imovel:'T1 Barreiro',valor:700,comissao:1,status:'Contactado'},
+  {id:'N001',cliente:'João Silva',imovel:'T2 Av. Roma, Lisboa',valorImovel:220000,comissaoGanha:6600,status:'Visita Agendada'},
+  {id:'N002',cliente:'Maria Santos',imovel:'T3 Vista Rio, Almada',valorImovel:300000,comissaoGanha:9000,status:'Proposta'},
+  {id:'N003',cliente:'Pedro Costa',imovel:'T1 Centro, Setúbal',valorImovel:140000,comissaoGanha:5600,status:'Lead'},
+  {id:'N004',cliente:'Ana Ferreira',imovel:'Moradia, Seixal',valorImovel:420000,comissaoGanha:14700,status:'Negociação'},
+  {id:'N005',cliente:'Carlos Mendes',imovel:'T1 Barreiro',valorImovel:85000,comissaoGanha:2550,status:'Contactado'},
 ];
 
 const INITIAL_INTERACTIONS = [
@@ -88,9 +88,9 @@ export default function App() {
   const stats = useMemo(() => {
     const active = deals.filter(d => d.status !== 'Fechado' && d.status !== 'Perdido');
     const fechados = deals.filter(d => d.status === 'Fechado');
-    const totalVal = active.reduce((s,d) => s + d.valor, 0);
-    const totalCom = active.reduce((s,d) => s + (d.valor * d.comissao / 100), 0);
-    const comissoesGanhas = fechados.reduce((s,d) => s + (d.valor * d.comissao / 100), 0);
+    const totalVal = active.reduce((s,d) => s + (d.valorImovel || 0), 0);
+    const totalCom = active.reduce((s,d) => s + (d.comissaoGanha || 0), 0);
+    const comissoesGanhas = fechados.reduce((s,d) => s + (d.comissaoGanha || 0), 0);
     const goldPago = comissoesGold.filter(c => c.status === 'Pago').reduce((s,c) => s + c.comissao, 0);
     const goldPendente = comissoesGold.filter(c => c.status !== 'Pago' && c.status !== 'Recusado').reduce((s,c) => s + c.comissao, 0);
     return { total: clients.length, ativos: active.length, fechados: fechados.length, valor: totalVal, comissoes: Math.round(totalCom), comissoesGanhas: Math.round(comissoesGanhas), goldPago, goldPendente, goldTotal: comissoesGold.length };
@@ -168,6 +168,31 @@ export default function App() {
   };
 
   const deleteGold = (id) => { if(confirm('Remover comissão?')) setComissoesGold(prev => prev.filter(c => c.id !== id)); };
+
+  const openDealModal = (id = null) => {
+    if (id) {
+      const d = deals.find(dl => dl.id === id);
+      setForm({...d});
+      setEditId(id);
+    } else {
+      setForm({status:'Lead',cliente:clients[0]?.nome});
+      setEditId(null);
+    }
+    setModal('deal');
+  };
+
+  const saveDeal = () => {
+    if (!form.imovel) return alert('Imóvel é obrigatório!');
+    if (editId) {
+      setDeals(prev => prev.map(d => d.id === editId ? {...d, ...form} : d));
+    } else {
+      const newD = {...form, id: 'N'+String(deals.length+1).padStart(3,'0')};
+      setDeals(prev => [...prev, newD]);
+    }
+    setModal(null);
+  };
+
+  const deleteDeal = (id) => { if(confirm('Remover negócio?')) setDeals(prev => prev.filter(d => d.id !== id)); };
 
   const resetAllData = () => {
     if(confirm('ATENÇÃO: Isto vai apagar TODOS os dados (clientes, negócios, interações e comissões). Tens a certeza?')) {
@@ -321,7 +346,10 @@ export default function App() {
 
         {/* PIPELINE */}
         {view === 'pipeline' && <>
-          <h2 style={{fontFamily:'"Playfair Display",serif',fontSize:28,color:'#1B2A4A',marginBottom:20}}>Pipeline de Vendas</h2>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
+            <h2 style={{fontFamily:'"Playfair Display",serif',fontSize:28,color:'#1B2A4A'}}>Pipeline de Vendas</h2>
+            <button onClick={() => openDealModal()} style={{padding:'9px 18px',border:'none',borderRadius:8,background:'#1B2A4A',color:'#fff',fontSize:14,fontWeight:600,cursor:'pointer'}}>+ Novo Negócio</button>
+          </div>
           <div style={{display:'grid',gridTemplateColumns:`repeat(${STATUSES.length},1fr)`,gap:12}}>
             {STATUSES.map(s => {
               const colDeals = deals.filter(d => d.status === s);
@@ -338,9 +366,16 @@ export default function App() {
                     <div key={d.id} draggable
                       onDragStart={() => setDragDeal(d.id)}
                       style={{background:'#fff',borderRadius:8,padding:12,marginBottom:8,boxShadow:'0 1px 2px rgba(0,0,0,.06)',cursor:'grab'}}>
-                      <div style={{fontWeight:600,fontSize:14,marginBottom:3}}>{d.cliente}</div>
+                      <div style={{display:'flex',justifyContent:'space-between',alignItems:'start',marginBottom:4}}>
+                        <div style={{fontWeight:600,fontSize:14}}>{d.cliente}</div>
+                        <div style={{display:'flex',gap:4}}>
+                          <button onClick={(e) => {e.stopPropagation(); openDealModal(d.id);}} style={{padding:'2px 6px',border:'1px solid #E2E8F0',borderRadius:4,background:'#fff',cursor:'pointer',fontSize:11}}>✏️</button>
+                          <button onClick={(e) => {e.stopPropagation(); deleteDeal(d.id);}} style={{padding:'2px 6px',border:'none',borderRadius:4,background:'#FED7D7',cursor:'pointer',fontSize:11}}>🗑</button>
+                        </div>
+                      </div>
                       <div style={{fontSize:12,color:'#718096',marginBottom:6}}>{d.imovel}</div>
-                      <div style={{fontWeight:700,color:'#D4A853',fontSize:15}}>{fmt(d.valor)} €</div>
+                      <div style={{fontSize:13,color:'#4A5568',marginBottom:2}}>Imóvel: {fmt(d.valorImovel || 0)} €</div>
+                      <div style={{fontWeight:700,color:'#48BB78',fontSize:15}}>Comissão: {fmt(d.comissaoGanha || 0)} €</div>
                     </div>
                   ))}
                 </div>
@@ -454,7 +489,9 @@ export default function App() {
           style={{position:'fixed',inset:0,background:'rgba(0,0,0,.5)',display:'flex',justifyContent:'center',alignItems:'center',zIndex:200}}>
           <div style={{background:'#fff',borderRadius:16,width:560,maxHeight:'85vh',overflowY:'auto',padding:28}} onClick={e => e.stopPropagation()}>
             <h3 style={{fontFamily:'"Playfair Display",serif',fontSize:22,color:'#1B2A4A',marginBottom:18}}>
-              {modal==='client' ? (editId ? 'Editar Cliente' : 'Novo Cliente') : modal==='gold' ? (editId ? 'Editar Indicação Gold' : 'Nova Indicação Gold') : 'Nova Interação'}
+              {modal==='client' ? (editId ? 'Editar Cliente' : 'Novo Cliente') :
+               modal==='gold' ? (editId ? 'Editar Indicação Gold' : 'Nova Indicação Gold') :
+               modal==='deal' ? (editId ? 'Editar Negócio' : 'Novo Negócio') : 'Nova Interação'}
             </h3>
 
             {modal === 'client' && (
@@ -520,6 +557,35 @@ export default function App() {
               </div>
             )}
 
+            {modal === 'deal' && (
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+                <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                  <label style={{fontSize:11,fontWeight:600,color:'#718096',textTransform:'uppercase'}}>Cliente</label>
+                  <select value={form.cliente||''} onChange={e => setForm({...form,cliente:e.target.value})} style={{padding:'9px 12px',border:'1.5px solid #E2E8F0',borderRadius:8,fontSize:14}}>
+                    {clients.map(c => <option key={c.id}>{c.nome}</option>)}
+                  </select>
+                </div>
+                <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                  <label style={{fontSize:11,fontWeight:600,color:'#718096',textTransform:'uppercase'}}>Imóvel</label>
+                  <input value={form.imovel||''} onChange={e => setForm({...form,imovel:e.target.value})} placeholder="Ex: T2 Av. Roma, Lisboa" style={{padding:'9px 12px',border:'1.5px solid #E2E8F0',borderRadius:8,fontSize:14}}/>
+                </div>
+                <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                  <label style={{fontSize:11,fontWeight:600,color:'#718096',textTransform:'uppercase'}}>Valor do Imóvel (€)</label>
+                  <input type="number" value={form.valorImovel||''} onChange={e => setForm({...form,valorImovel:Number(e.target.value)})} placeholder="0" style={{padding:'9px 12px',border:'1.5px solid #E2E8F0',borderRadius:8,fontSize:14}}/>
+                </div>
+                <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                  <label style={{fontSize:11,fontWeight:600,color:'#718096',textTransform:'uppercase'}}>Comissão Ganha (€)</label>
+                  <input type="number" value={form.comissaoGanha||''} onChange={e => setForm({...form,comissaoGanha:Number(e.target.value)})} placeholder="0" style={{padding:'9px 12px',border:'1.5px solid #E2E8F0',borderRadius:8,fontSize:14}}/>
+                </div>
+                <div style={{display:'flex',flexDirection:'column',gap:4,gridColumn:'1/-1'}}>
+                  <label style={{fontSize:11,fontWeight:600,color:'#718096',textTransform:'uppercase'}}>Status</label>
+                  <select value={form.status||'Lead'} onChange={e => setForm({...form,status:e.target.value})} style={{padding:'9px 12px',border:'1.5px solid #E2E8F0',borderRadius:8,fontSize:14}}>
+                    {STATUSES.map(s => <option key={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+            )}
+
             {modal === 'gold' && (
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
                 <div style={{display:'flex',flexDirection:'column',gap:4}}>
@@ -553,7 +619,7 @@ export default function App() {
 
             <div style={{display:'flex',justifyContent:'flex-end',gap:10,marginTop:18,paddingTop:14,borderTop:'1px solid #E2E8F0'}}>
               <button onClick={() => setModal(null)} style={{padding:'9px 18px',border:'1.5px solid #E2E8F0',borderRadius:8,background:'transparent',fontSize:14,fontWeight:600,cursor:'pointer'}}>Cancelar</button>
-              <button onClick={modal==='client' ? saveClient : modal==='gold' ? saveGold : saveInteraction} style={{padding:'9px 18px',border:'none',borderRadius:8,background: modal==='gold' ? '#D4A853' : '#1B2A4A',color:'#fff',fontSize:14,fontWeight:600,cursor:'pointer'}}>Guardar</button>
+              <button onClick={modal==='client' ? saveClient : modal==='gold' ? saveGold : modal==='deal' ? saveDeal : saveInteraction} style={{padding:'9px 18px',border:'none',borderRadius:8,background: modal==='gold' ? '#D4A853' : '#1B2A4A',color:'#fff',fontSize:14,fontWeight:600,cursor:'pointer'}}>Guardar</button>
             </div>
           </div>
         </div>
